@@ -1,0 +1,465 @@
+{
+  "name": "Offer Generation & E-Signature",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "offer-generation",
+        "options": {}
+      },
+      "id": "2cecc770-37a3-4564-9f4f-2a984cb8a2ef",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -1184,
+        192
+      ],
+      "webhookId": "fedddab9-56df-478a-b98b-ad4b044e1cf8"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "84caf48a-0c9a-4109-9613-8463371e00c0",
+              "name": "candidateId",
+              "value": "={{ $json.body.candidateId }}",
+              "type": "string"
+            },
+            {
+              "id": "bd4b9501-edde-4d74-ba70-34df48aeb692",
+              "name": "email",
+              "value": "={{ $json.body.email }}",
+              "type": "string"
+            },
+            {
+              "id": "bd2c7bf5-f4de-41ee-af25-5d1b97a827a5",
+              "name": "name",
+              "value": "={{ $json.body.name }}",
+              "type": "string"
+            },
+            {
+              "id": "8886ec4c-7cac-4ea8-8a4a-d9530676a885",
+              "name": "position",
+              "value": "={{ $json.body.position }}",
+              "type": "string"
+            },
+            {
+              "id": "8fc56012-6c56-4c0f-890a-3583636ea41e",
+              "name": "salary",
+              "value": "={{ $json.body.salary }}",
+              "type": "string"
+            },
+            {
+              "id": "64a7b385-0b16-4808-b90d-03d7a8303dc8",
+              "name": "joiningDate",
+              "value": "={{ $json.body.joiningDate }}",
+              "type": "string"
+            },
+            {
+              "id": "1d26d76e-eab6-477d-b2b6-b7e5692738b9",
+              "name": "department",
+              "value": "={{ $json.body.department }}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "id": "63668da2-1534-4cec-9373-3688e196437c",
+      "name": "Edit Fields",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -944,
+        176
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "delete",
+        "documentId": {
+          "__rl": true,
+          "value": "1URFEZbBA6aPxLsJ-0Iyl0e2yTzJMfNorJ7jSVb_YIq8",
+          "mode": "list",
+          "cachedResultName": "Recruitment Database",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1URFEZbBA6aPxLsJ-0Iyl0e2yTzJMfNorJ7jSVb_YIq8/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=3",
+          "mode": "list",
+          "cachedResultName": "Offer Letters",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1URFEZbBA6aPxLsJ-0Iyl0e2yTzJMfNorJ7jSVb_YIq8/edit#gid=3"
+        }
+      },
+      "id": "3230ba6c-b493-422d-b180-191365ce0d87",
+      "name": "Delete rows or columns from sheet",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -752,
+        240
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "yRaFgNSJBDINTcXh",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('Edit Fields').item.json.email }}",
+        "subject": "Exciting News - Your Offer Letter is Ready!",
+        "message": "=Hello {{ $('Edit Fields').item.json.name }},\n\nCongratulations! We are delighted to extend an offer for the {{ $('Edit Fields').item.json.position }} position.\n\nYour offer letter is being prepared and will be shared with you shortly for electronic signature.\n\nThis is an important milestone in your journey with us!\n\nRegards,\nHuman Resources Team",
+        "options": {}
+      },
+      "id": "3676a45d-3947-459b-86d2-6b40449fe472",
+      "name": "Send a message",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        -544,
+        400
+      ],
+      "alwaysOutputData": true,
+      "webhookId": "0512c863-a4a3-4508-bc91-fc7dabfcc49c",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "CP78ojW1iJn3c25g",
+          "name": "Gmail account 7"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.groq.com/openai/v1/chat/completions",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "groqApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"qwen/qwen3.6-27b\",\n  \"messages\": [\n    {\n      \"role\": \"system\",\n      \"content\": \"You are an HR document expert. Generate formal offer letter content and return ONLY valid JSON with fields: offerId (string), benefits (array), probationPeriod (string), reportingManager (string). Do not include markdown or text outside JSON.\"\n    },\n    {\n      \"role\": \"user\",\n      \"content\": \"Generate offer details for: Position={{ $('Edit Fields').item.json.position }}, Salary={{ $('Edit Fields').item.json.salary }}, Department={{ $('Edit Fields').item.json.department }}\"\n    }\n  ],\n  \"response_format\": {\n    \"type\": \"json_object\"\n  }\n}",
+        "options": {}
+      },
+      "id": "d69c331a-c957-490a-9ef3-a3acb4e06fd6",
+      "name": "HTTP Request",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -416,
+        256
+      ],
+      "credentials": {
+        "groqApi": {
+          "id": "bIhcBFRqzgsq5JCz",
+          "name": "Groq account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1URFEZbBA6aPxLsJ-0Iyl0e2yTzJMfNorJ7jSVb_YIq8",
+          "mode": "list",
+          "cachedResultName": "Recruitment Database",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1URFEZbBA6aPxLsJ-0Iyl0e2yTzJMfNorJ7jSVb_YIq8/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=3",
+          "mode": "list",
+          "cachedResultName": "Offer Letters",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1URFEZbBA6aPxLsJ-0Iyl0e2yTzJMfNorJ7jSVb_YIq8/edit#gid=3"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "A1": "={{ $('Edit Fields').item.json.candidateId }}",
+            "B1": "={{ $('Edit Fields').item.json.name }}",
+            "C1": "={{ $('Edit Fields').item.json.email }}",
+            "D1": "={{ $('Edit Fields').item.json.position }}",
+            "E1": "={{ $('Edit Fields').item.json.salary }}",
+            "F1": "={{ $('Edit Fields').item.json.joiningDate }}",
+            "G1": "={{ $('Edit Fields').item.json.department }}",
+            "H1": "={{ JSON.parse($json.choices[0].message.content).offerId }}",
+            "I1": "=SENT_FOR_SIGNATURE",
+            "J1": "={{ new Date().toISOString().split('T')[0] }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "A1",
+              "displayName": "Candidate ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "fc62309d-1abe-4603-a1da-d42ff5839825",
+      "name": "Append row in sheet",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        0,
+        0
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "wFp2hO5ZPXI4HQbe",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "445da9c2-0609-4f8a-a8d5-bfb821606bf8",
+              "leftValue": "={{$('Edit Fields').item.json.salary}}",
+              "rightValue": "0",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "id": "ef10c7a5-3359-41d6-a7fc-dc1e04f3a92a",
+      "name": "If",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        208,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "sendTo": "={{$('Edit Fields').item.json.email}}",
+        "subject": "🎉 Your Offer Letter - Action Required (E-Signature Needed)",
+        "message": "=Hello {{$('Edit Fields').item.json.name}},\n\nWe are thrilled to formally offer you the position of {{$('Edit Fields').item.json.position}} at our organization.\n\n📄 OFFER DETAILS:\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nPosition: {{$('Edit Fields').item.json.position}}\nSalary: INR {{$('Edit Fields').item.json.salary}} per annum\nJoining Date: {{$('Edit Fields').item.json.joiningDate}}\nDepartment: {{$('Edit Fields').item.json.department}}\nProbation Period: 3 months\nBenefits: Health Insurance, Performance Bonus, Flexible Hours\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n✍️ NEXT STEP:\nPlease review the attached offer letter and sign electronically within 5 business days.\nDocuSign Link: https://docusign.com/offer-{{$('Edit Fields').item.json.candidateId}}\n\nWe look forward to welcoming you to our team!\n\nBest Regards,\nHuman Resources Department",
+        "options": {}
+      },
+      "id": "971a3216-8d6b-458d-9286-c4da1ba63684",
+      "name": "Send a message1",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        448,
+        128
+      ],
+      "webhookId": "b527f9c4-1b2d-4519-8bcb-f82f8d2c1fb6",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "CP78ojW1iJn3c25g",
+          "name": "Gmail account 7"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "={{$('Edit Fields').item.json.email}}",
+        "subject": "Offer Letter - Unable to Process",
+        "message": "=Hello {{$('Edit Fields').item.json.name}},\n\nWe encountered an issue processing your offer letter.\n\nPlease contact our HR team for assistance.\n\nRegards,\nHuman Resources Department",
+        "options": {}
+      },
+      "id": "4445a09b-7605-4b11-b4be-029c12320dc4",
+      "name": "Send a message2",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        432,
+        352
+      ],
+      "webhookId": "6e8a7fb3-01b2-4722-a355-318c60fef6eb",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "CP78ojW1iJn3c25g",
+          "name": "Gmail account 7"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const content = $json.choices[0].message.content;\n\n// Remove <think>...</think>\nconst cleanContent = content\n  .replace(/<think>[\\s\\S]*?<\\/think>/g, '')\n  .trim();\n\n// Extract JSON if extra text is still present\nconst jsonMatch = cleanContent.match(/\\{[\\s\\S]*\\}/);\n\nif (!jsonMatch) {\n  throw new Error(\"AI response does not contain valid JSON\");\n}\n\nconst response = JSON.parse(jsonMatch[0]);\n\nreturn [{\n  json: {\n    offerId: response.offerId ?? \"OFFER-\" + Date.now(),\n    benefits: response.benefits ?? [],\n    probationPeriod: response.probationPeriod ?? \"3 months\",\n    reportingManager: response.reportingManager ?? \"Department Manager\"\n  }\n}];"
+      },
+      "id": "bedc2fea-86ca-4eff-8291-4cb7ddf7b0d5",
+      "name": "Code in JavaScript",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -32,
+        480
+      ]
+    }
+  ],
+  "pinData": {
+    "Webhook": [
+      {
+        "json": {
+          "headers": {},
+          "query": {},
+          "params": {},
+          "body": {
+            "candidateId": "CAND-004",
+            "email": "candidate@example.com",
+            "name": "Sarah Johnson",
+            "position": "Product Manager",
+            "salary": "18,00,000",
+            "joiningDate": "2024-09-15",
+            "department": "Product Development"
+          }
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Delete rows or columns from sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Delete rows or columns from sheet": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a message": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Append row in sheet",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append row in sheet": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Send a message1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send a message2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "dca5e5fb-555f-4072-832e-30b528f42e5a",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "288e612a19cd10557f317f1208a8d9779b307852e51222b415e7d595662e08fb"
+  },
+  "nodeGroups": [],
+  "id": "JiRk3s2GYAhSFn9d",
+  "tags": []
+}
