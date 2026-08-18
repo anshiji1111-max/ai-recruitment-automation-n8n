@@ -1,0 +1,127 @@
+{
+  "name": "CV Parsing & AI Screening",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "webhook/cv-upload",
+        "authentication": "none",
+        "options": {}
+      },
+      "name": "Webhook - Resume Upload",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [100, 200]
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "operation": "download",
+        "fileUrl": "={{$node[\"Webhook - Resume Upload\"].json.resume_url}}"
+      },
+      "name": "Download Resume File",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [300, 200]
+    },
+    {
+      "parameters": {
+        "model": "gpt-4",
+        "messages": [
+          {
+            "role": "user",
+            "content": "Extract and analyze this resume: {{$node[\"Download Resume File\"].json.body}}. Provide: Name, Email, Phone, Experience (years), Skills, Education, Strengths, Weaknesses, Overall Score (1-10)."
+          }
+        ]
+      },
+      "name": "AI Resume Analysis (OpenAI/Claude)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [500, 200]
+    },
+    {
+      "parameters": {
+        "functionCode": "return {\n  candidateName: $node[\"AI Resume Analysis (OpenAI/Claude)\"].json.response.name,\n  email: $node[\"AI Resume Analysis (OpenAI/Claude)\"].json.response.email,\n  aiScore: $node[\"AI Resume Analysis (OpenAI/Claude)\"].json.response.score,\n  skills: $node[\"AI Resume Analysis (OpenAI/Claude)\"].json.response.skills,\n  experience: $node[\"AI Resume Analysis (OpenAI/Claude)\"].json.response.experience,\n  status: $node[\"AI Resume Analysis (OpenAI/Claude)\"].json.response.score >= 7 ? \"SHORTLISTED\" : \"REJECTED\",\n  timestamp: new Date().toISOString()\n}"
+      },
+      "name": "Process AI Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [700, 200]
+    },
+    {
+      "parameters": {
+        "condition": "number",
+        "value1": "={{$node[\"Process AI Response\"].json.aiScore}}",
+        "value2": 6,
+        "operation": "greaterThan"
+      },
+      "name": "Score Check - Shortlist?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [900, 150]
+    },
+    {
+      "parameters": {
+        "documentId": "1aBcD1234eFgH5678ijkL90MnOpQ",
+        "action": "appendOrUpdate",
+        "columns": {
+          "mapping": {
+            "Candidate_Name": "={{$node[\"Process AI Response\"].json.candidateName}}",
+            "Email": "={{$node[\"Process AI Response\"].json.email}}",
+            "AI_Score": "={{$node[\"Process AI Response\"].json.aiScore}}",
+            "Status": "={{$node[\"Process AI Response\"].json.status}}",
+            "Skills": "={{$node[\"Process AI Response\"].json.skills.join(', ')}}",
+            "Experience": "={{$node[\"Process AI Response\"].json.experience}}"
+          }
+        }
+      },
+      "name": "Save to Google Sheet",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [1100, 100]
+    },
+    {
+      "parameters": {
+        "email": "={{$node[\"Process AI Response\"].json.email}}",
+        "subject": "Congratulations! You're Shortlisted",
+        "textOnly": false,
+        "htmlBody": "<h2>Great news!</h2><p>Your resume has been reviewed by our AI system and you've been shortlisted for the next round.</p><p><strong>Your Score: {{$node[\"Process AI Response\"].json.aiScore}}/10</strong></p><p>Next Step: Interview Scheduling</p>"
+      },
+      "name": "Send Shortlist Email",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2,
+      "position": [1100, 200]
+    },
+    {
+      "parameters": {
+        "email": "{{$node[\"Process AI Response\"].json.email}}",
+        "subject": "Application Status",
+        "textOnly": false,
+        "htmlBody": "<p>Thank you for applying. Unfortunately, your profile doesn't match our current requirements at this time.</p><p>Best of luck with your job search!</p>"
+      },
+      "name": "Send Rejection Email",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2,
+      "position": [1100, 350]
+    }
+  ],
+  "connections": {
+    "Webhook - Resume Upload": {
+      "main": [[{ "node": "Download Resume File", "type": "main", "index": 0 }]]
+    },
+    "Download Resume File": {
+      "main": [[{ "node": "AI Resume Analysis (OpenAI/Claude)", "type": "main", "index": 0 }]]
+    },
+    "AI Resume Analysis (OpenAI/Claude)": {
+      "main": [[{ "node": "Process AI Response", "type": "main", "index": 0 }]]
+    },
+    "Process AI Response": {
+      "main": [[{ "node": "Score Check - Shortlist?", "type": "main", "index": 0 }]]
+    },
+    "Score Check - Shortlist?": {
+      "main": [
+        [{ "node": "Save to Google Sheet", "type": "main", "index": 0 }, { "node": "Send Shortlist Email", "type": "main", "index": 0 }],
+        [{ "node": "Send Rejection Email", "type": "main", "index": 0 }]
+      ]
+    }
+  }
+}
