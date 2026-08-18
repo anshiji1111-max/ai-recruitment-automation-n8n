@@ -1,0 +1,555 @@
+{
+  "name": "AI-Powered Recruitment & Hiring Automation Platform",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "candidate-registration",
+        "options": {}
+      },
+      "id": "2cecc770-37a3-4564-9f4f-2a984cb8a2ef",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -1184,
+        192
+      ],
+      "webhookId": "fedddab9-56df-478a-b98b-ad4b044e1cf8"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "84caf48a-0c9a-4109-9613-8463371e00c0",
+              "name": "name",
+              "value": "={{ $json.body.name }}",
+              "type": "string"
+            },
+            {
+              "id": "bd4b9501-edde-4d74-ba70-34df48aeb692",
+              "name": "email",
+              "value": "={{ $json.body.email }}",
+              "type": "string"
+            },
+            {
+              "id": "bd2c7bf5-f4de-41ee-af25-5d1b97a827a5",
+              "name": "phone",
+              "value": "={{ $json.body.phone }}",
+              "type": "string"
+            },
+            {
+              "id": "8886ec4c-7cac-4ea8-8a4a-d9530676a885",
+              "name": "position",
+              "value": "={{ $json.body.position }}",
+              "type": "string"
+            },
+            {
+              "id": "8fc56012-6c56-4c0f-890a-3583636ea41e",
+              "name": "experience",
+              "value": "={{ $json.body.experience }}",
+              "type": "string"
+            },
+            {
+              "id": "64a7b385-0b16-4808-b90d-03d7a8303dc8",
+              "name": "skills",
+              "value": "={{ $json.body.skills }}",
+              "type": "array"
+            },
+            {
+              "id": "1d26d76e-eab6-477d-b2b6-b7e5692738b9",
+              "name": "resume",
+              "value": "={{ $json.body.resume }}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "id": "63668da2-1534-4cec-9373-3688e196437c",
+      "name": "Edit Fields",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -944,
+        176
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "delete",
+        "documentId": {
+          "__rl": true,
+          "value": "1URFEZbBA6aPxLsJ-0Iyl0e2yTzJMfNorJ7jSVb_YIq8",
+          "mode": "list",
+          "cachedResultName": "Recruitment Database",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1URFEZbBA6aPxLsJ-0Iyl0e2yTzJMfNorJ7jSVb_YIq8/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Candidates",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1URFEZbBA6aPxLsJ-0Iyl0e2yTzJMfNorJ7jSVb_YIq8/edit#gid=0"
+        }
+      },
+      "id": "3230ba6c-b493-422d-b180-191365ce0d87",
+      "name": "Delete rows or columns from sheet",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -752,
+        240
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "yRaFgNSJBDINTcXh",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "=anshuraniji1111@gmail.com",
+        "subject": "Application Received Successfully",
+        "message": "=Hello {{ $('Edit Fields').item.json.name }},\n\nThank you for applying for the {{ $('Edit Fields').item.json.position }} position.\n\nWe have successfully received your application.\n\nOur AI Recruitment Platform will review your profile and contact you shortly.\n\nRegards,\nHR Team",
+        "options": {}
+      },
+      "id": "3676a45d-3947-459b-86d2-6b40449fe472",
+      "name": "Send a message",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        -544,
+        400
+      ],
+      "alwaysOutputData": true,
+      "webhookId": "0512c863-a4a3-4508-bc91-fc7dabfcc49c",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "CP78ojW1iJn3c25g",
+          "name": "Gmail account 7"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.groq.com/openai/v1/chat/completions",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "groqApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"qwen/qwen3.6-27b\",\n  \"messages\": [\n    {\n      \"role\": \"system\",\n      \"content\": \"You are an AI recruiter. Analyze the candidate and return ONLY valid JSON with exactly these fields: ai_score (number 0-100), strengths (string), weaknesses (string), recommendation (string). Do not include markdown, <think>, or any text outside the JSON.\"\n    },\n    {\n      \"role\": \"user\",\n      \"content\": \"Analyze this candidate: {{ $('Edit Fields').item.json }}\"\n    }\n  ],\n  \"response_format\": {\n    \"type\": \"json_object\"\n  }\n}",
+        "options": {}
+      },
+      "id": "d69c331a-c957-490a-9ef3-a3acb4e06fd6",
+      "name": "HTTP Request",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -416,
+        256
+      ],
+      "credentials": {
+        "groqApi": {
+          "id": "bIhcBFRqzgsq5JCz",
+          "name": "Groq account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1URFEZbBA6aPxLsJ-0Iyl0e2yTzJMfNorJ7jSVb_YIq8",
+          "mode": "list",
+          "cachedResultName": "Recruitment Database",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1URFEZbBA6aPxLsJ-0Iyl0e2yTzJMfNorJ7jSVb_YIq8/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Candidates",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1URFEZbBA6aPxLsJ-0Iyl0e2yTzJMfNorJ7jSVb_YIq8/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "A1": "={{ $('Edit Fields').item.json.email }}",
+            "B1": "={{ JSON.parse($json.choices[0].message.content).ai_score }}",
+            "C1": "={{ $json.strengths }}",
+            "D1": "={{ $json.weaknesses }}",
+            "E1": "={{ $json.recommendation }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "A1",
+              "displayName": "A1",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "B1",
+              "displayName": "B1",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "C1",
+              "displayName": "C1",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "D1",
+              "displayName": "D1",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "E1",
+              "displayName": "E1",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "F1",
+              "displayName": "F1",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "G1",
+              "displayName": "G1",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "H1",
+              "displayName": "H1",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "I1",
+              "displayName": "I1",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "J1",
+              "displayName": "J1",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "K1",
+              "displayName": "K1",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "fc62309d-1abe-4603-a1da-d42ff5839825",
+      "name": "Append row in sheet",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        0,
+        0
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "wFp2hO5ZPXI4HQbe",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "445da9c2-0609-4f8a-a8d5-bfb821606bf8",
+              "leftValue": "={{$json.ai_score}}",
+              "rightValue": 70,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "id": "ef10c7a5-3359-41d6-a7fc-dc1e04f3a92a",
+      "name": "If",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        208,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "sendTo": "={{$('Edit Fields').item.json.email}}",
+        "subject": "🎉 Congratulations! You have been shortlisted",
+        "message": "=Hello {{$('Edit Fields').item.json.name}},  Congratulations!  Our AI Recruitment System has successfully evaluated your application for the {{$('Edit Fields').item.json.position}} position.  Based on your profile, you have been shortlisted for the next round.  Our HR team will contact you shortly with further details.  Regards, HR Team AI Recruitment Platform",
+        "options": {}
+      },
+      "id": "971a3216-8d6b-458d-9286-c4da1ba63684",
+      "name": "Send a message1",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        448,
+        128
+      ],
+      "webhookId": "b527f9c4-1b2d-4519-8bcb-f82f8d2c1fb6",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "CP78ojW1iJn3c25g",
+          "name": "Gmail account 7"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "={{$('Edit Fields').item.json.email}}",
+        "subject": "Application Status Update",
+        "message": "=Hello {{$('Edit Fields').item.json.name}},  Thank you for applying for the {{$('Edit Fields').item.json.position}} position.  After reviewing your application, we are unable to move forward with your application at this time.  We appreciate your interest in our company and encourage you to apply again in the future.  Regards, HR Team AI Recruitment Platform",
+        "options": {}
+      },
+      "id": "4445a09b-7605-4b11-b4be-029c12320dc4",
+      "name": "Send a message2",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        432,
+        352
+      ],
+      "webhookId": "6e8a7fb3-01b2-4722-a355-318c60fef6eb",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "CP78ojW1iJn3c25g",
+          "name": "Gmail account 7"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const content = $json.choices[0].message.content;\n\n// Remove <think>...</think>\nconst cleanContent = content\n  .replace(/<think>[\\s\\S]*?<\\/think>/g, '')\n  .trim();\n\n// Extract JSON if extra text is still present\nconst jsonMatch = cleanContent.match(/\\{[\\s\\S]*\\}/);\n\nif (!jsonMatch) {\n  throw new Error(\"AI response does not contain valid JSON\");\n}\n\nconst response = JSON.parse(jsonMatch[0]);\n\nreturn [{\n  json: {\n    ai_score: response.ai_score ?? \"\",\n    strengths: response.strengths ?? \"\",\n    weaknesses: response.weaknesses ?? \"\",\n    recommendation: response.recommendation ?? \"\"\n  }\n}];"
+      },
+      "id": "bedc2fea-86ca-4eff-8291-4cb7ddf7b0d5",
+      "name": "Code in JavaScript",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -32,
+        480
+      ]
+    }
+  ],
+  "pinData": {
+    "Webhook": [
+      {
+        "json": {
+          "headers": {},
+          "query": {},
+          "params": {},
+          "body": {
+            "name": "Anshu balhara",
+            "email": "anshuraniji1111@gmail.com",
+            "phone": "9876543210",
+            "position": "AI Engineer Intern",
+            "experience": "2 Years",
+            "skills": [
+              "Python",
+              "Machine Learning",
+              "n8n",
+              "OpenAI"
+            ],
+            "resume": "resume.pdf"
+          }
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Delete rows or columns from sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Delete rows or columns from sheet": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a message": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Append row in sheet",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append row in sheet": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Send a message1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send a message2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "dca5e5fb-555f-4072-832e-30b528f42e5a",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "288e612a19cd10557f317f1208a8d9779b307852e51222b415e7d595662e08fb"
+  },
+  "nodeGroups": [],
+  "id": "JiRk3s2GYAhSFn9d",
+  "tags": []
+}
